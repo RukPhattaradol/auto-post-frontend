@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Navbar from "../../components/Navbar/Navbar";
 
 function App() {
   const [caption, setCaption] = useState("");
@@ -7,10 +8,10 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const postUrl = "https://n8n.cynlive.com/webhook-test/bdd937b8-ffdf-4b68-9484-996fdf7e7cd2";
+  const postUrl = "https://n8n.cynlive.com/webhook/api/auto-post/upload";
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]; // เลือกไฟล์แรกเท่านั้น
+    const selectedFile = e.target.files[0];
     if (!selectedFile) {
       setFile(null);
       setPreview(null);
@@ -28,7 +29,6 @@ function App() {
     setError("");
     setFile(selectedFile);
 
-    // สร้าง preview
     const reader = new FileReader();
     reader.onloadend = () => setPreview(reader.result);
     reader.readAsDataURL(selectedFile);
@@ -48,7 +48,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append("caption", caption);
-      formData.append("file", file); // ส่งไฟล์เดียว
+      formData.append("file", file);
 
       const res = await fetch(postUrl, { method: "POST", body: formData });
       if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -66,15 +66,22 @@ function App() {
 
   return (
     <div style={{ maxWidth: 400, margin: "50px auto", fontFamily: "sans-serif" }}>
+      <Navbar />
       <h2>Upload Form</h2>
       <form onSubmit={handleSubmit}>
+        {/* ช่อง caption แก้เป็น textarea */}
         <div style={{ marginBottom: 16 }}>
           <label>Caption:</label>
-          <input
-            type="text"
+          <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
+            rows={15}
+            placeholder="พิมพ์ข้อความหลายบรรทัดได้"
+            style={{
+              width: "100%",
+              padding: 8,
+              resize: "vertical", // ผู้ใช้ปรับความสูงได้
+            }}
           />
         </div>
 

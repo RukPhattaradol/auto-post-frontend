@@ -1,116 +1,204 @@
-import { useState } from "react";
+// src/pages/App.jsx
+import { useState, useEffect } from "react";
+import Navbar from "../../components/Navbar/Navbar";
 
-function App() {
-  // ตัวอย่าง data รูปจาก backend
-  const items = [
-    { id: 1, caption: "รูปที่ 1", url: "https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/396e9/MainBefore.jpg" },
-    { id: 2, caption: "รูปที่ 2", url: "https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/396e9/MainBefore.jpg" },
-    { id: 3, caption: "รูปที่ 3", url: "https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/396e9/MainBefore.jpg" },
-  ];
+export default function App() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalImage, setModalImage] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const rowsPerPage = 2; // แสดง 2 row ต่อ page
 
-  const groupOptions = ["Group 1", "Group 2", "Group 3", "Group 4"];
-
-  const [selectedGroups, setSelectedGroups] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
-
-  // toggle group checkbox
-  const handleGroupChange = (group) => {
-    setSelectedGroups((prev) =>
-      prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group]
-    );
-  };
-
-  // select one item (radio)
-  const handleItemSelect = (id) => {
-    setSelectedItem(id);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedItem || selectedGroups.length === 0) {
-      alert("กรุณาเลือกกลุ่มและรูป");
-      return;
-    }
-
-    const data = {
-      selectedGroups,
-      selectedItem,
+  // ดึง log จาก API
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          "https://n8n.cynlive.com/webhook/api/auto-post/get-log"
+        );
+        if (!res.ok) throw new Error("Failed to fetch logs");
+        const data = await res.json();
+        setLogs(data);
+      } catch (err) {
+        console.error("Error fetching logs:", err);
+        alert("โหลด log ไม่สำเร็จ");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    try {
-      const response = await fetch(
-        "https://n8n.cynlive.com/webhook-test/bdd937b8-ffdf-4b68-9484-996fdf7e7cd2",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        }
-      );
+    fetchLogs();
+  }, []);
 
-      if (!response.ok) throw new Error("เกิดข้อผิดพลาดในการส่งข้อมูล");
+  // สถิติ
+  const successCount = logs.filter((log) => log.status === "success").length;
+  const failedCount = logs.filter((log) => log.status === "failed").length;
+  const runningCount = logs.filter((log) => log.status === "running").length;
 
-      alert("ส่งข้อมูลสำเร็จ!");
-    } catch (err) {
-      console.error(err);
-      alert("ส่งข้อมูลไม่สำเร็จ");
-    }
-  };
-
+  // Pagination
+  const totalPages = Math.ceil(logs.length / rowsPerPage);
+  const currentLogs = logs.slice(
+    currentPage * rowsPerPage,
+    currentPage * rowsPerPage + rowsPerPage
+  );
 
   return (
-    <div style={{ maxWidth: 600, margin: "50px auto", fontFamily: "sans-serif" }}>
-      <h2>เลือกรูปและกลุ่ม</h2>
+    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif", position: "relative" }}>
+      <Navbar />
+      <h1>Dashboard</h1>
 
-      <div style={{ marginBottom: 16 }}>
-        <label>เลือกกลุ่ม:</label>
-        <div style={{ display: "flex", flexWrap: "wrap", marginTop: 8 }}>
-          {groupOptions.map((g) => (
-            <label key={g} style={{ marginRight: 16 }}>
-              <input
-                type="checkbox"
-                checked={selectedGroups.includes(g)}
-                onChange={() => handleGroupChange(g)}
-              />{" "}
-              {g}
-            </label>
-          ))}
+      {/* overlay loading */}
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(255,255,255,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div className="loader" />
+          <style>{`
+            .loader {
+              border: 8px solid #f3f3f3;
+              border-top: 8px solid #007bff;
+              border-radius: 50%;
+              width: 60px;
+              height: 60px;
+              animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* สถิติ */}
+      <div style={{ display: "flex", gap: "2rem", marginBottom: "2rem" }}>
+        <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+          <h3>Success</h3>
+          <p style={{ fontSize: "1.5rem", color: "green" }}>{successCount}</p>
+        </div>
+        <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+          <h3>Failed</h3>
+          <p style={{ fontSize: "1.5rem", color: "red" }}>{failedCount}</p>
+        </div>
+        <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+          <h3>Running</h3>
+          <p style={{ fontSize: "1.5rem", color: "orange" }}>{runningCount}</p>
         </div>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
-        <thead>
-          <tr>
-            <th style={{ border: "1px solid #ccc", padding: 8 }}>เลือก</th>
-            <th style={{ border: "1px solid #ccc", padding: 8 }}>รูป</th>
-            <th style={{ border: "1px solid #ccc", padding: 8 }}>Caption</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td style={{ border: "1px solid #ccc", padding: 8, textAlign: "center" }}>
-                <input
-                  type="radio"
-                  name="selectedItem"
-                  checked={selectedItem === item.id}
-                  onChange={() => handleItemSelect(item.id)}
-                />
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 8 }}>
-                <img src={item.url} alt={item.caption} style={{ maxWidth: 100 }} />
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 8 }}>{item.caption}</td>
+      {/* ตาราง log */}
+      <div
+        style={{
+          width: "60%", // 3/5 ของหน้าจอ
+          margin: "0 auto",
+          maxHeight: "400px",
+          overflowY: "auto",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ backgroundColor: "#f2f2f2" }}>
+              <th style={{ border: "1px solid #ccc", padding: "0.5rem" }}>วันที่</th>
+              <th style={{ border: "1px solid #ccc", padding: "0.5rem" }}>รูป</th>
+              <th style={{ border: "1px solid #ccc", padding: "0.5rem" }}>Caption</th>
+              <th style={{ border: "1px solid #ccc", padding: "0.5rem" }}>Group Name</th>
+              <th style={{ border: "1px solid #ccc", padding: "0.5rem" }}>Status</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {currentLogs.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
+                  ไม่มี log
+                </td>
+              </tr>
+            ) : (
+              currentLogs.map((log) => (
+                <tr key={log.id}>
+                  <td style={{ border: "1px solid #ccc", padding: "0.5rem" }}>
+                    {new Date(log.created_at).toLocaleString("th-TH")}
+                  </td>
+                  <td style={{ border: "1px solid #ccc", padding: "0.5rem" }}>
+                    {log.data ? (
+                      <img
+                        src={`data:image/jpeg;base64,${log.data}`}
+                        alt="post"
+                        style={{ maxWidth: 80, cursor: "pointer" }}
+                        onClick={() => setModalImage(`data:image/jpeg;base64,${log.data}`)}
+                      />
+                    ) : (
+                      "ไม่มีรูป"
+                    )}
+                  </td>
+                  <td style={{ border: "1px solid #ccc", padding: "0.5rem" }}>{log.post_caption}</td>
+                  <td style={{ border: "1px solid #ccc", padding: "0.5rem" }}>{log.group_name}</td>
+                  <td
+                    style={{
+                      border: "1px solid #ccc",
+                      padding: "0.5rem",
+                      color:
+                        log.status === "success"
+                          ? "green"
+                          : log.status === "failed"
+                          ? "red"
+                          : "orange",
+                    }}
+                  >
+                    {log.status}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <button onClick={handleSubmit} style={{ padding: "8px 16px" }}>
-        Submit
-      </button>
+      {/* pagination */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem", gap: "1rem" }}>
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
+          disabled={currentPage === 0}
+        >
+          ก่อนหน้า
+        </button>
+        <span>Page {currentPage + 1} / {totalPages}</span>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
+          disabled={currentPage + 1 >= totalPages}
+        >
+          ถัดไป
+        </button>
+      </div>
+
+      {/* modal แสดงรูปใหญ่ */}
+      {modalImage && (
+        <div
+          onClick={() => setModalImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.7)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+            cursor: "pointer",
+          }}
+        >
+          <img src={modalImage} alt="large" style={{ maxHeight: "80%", maxWidth: "80%" }} />
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;

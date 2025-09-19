@@ -1,0 +1,38 @@
+/* src/components/Navbar.css */
+.navbar {
+  width: 100%;
+  box-sizing: border-box; /* เพิ่มตรงนี้ */
+  padding: 1rem; /* ลด padding ซ้ายขวา */
+  background-color: #333;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-links a {
+  color: #fff;
+  margin-right: 1rem;
+  text-decoration: none;
+}
+
+.nav-links a:last-child {
+  margin-right: 0;
+}
+
+/* ทำให้ responsive บนมือถือ */
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    margin-top: 0.5rem;
+  }
+
+  .nav-links a {
+    display: block;
+    margin: 0.3rem 0;
+  }
+}
